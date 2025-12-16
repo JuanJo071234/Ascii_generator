@@ -9,7 +9,7 @@ def process_image(image_bytes, max_width=100):
         image = Image.open(io.BytesIO(image_bytes))
 
         # Convertir a ASCII
-        from app.core.ascii_converter import ASCIIConverter
+        from ..core.ascii_converter import ASCIIConverter
         ascii_art = ASCIIConverter.image_to_ascii(image, max_width)
 
         return ascii_art

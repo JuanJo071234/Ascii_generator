@@ -5,10 +5,11 @@ from PIL import Image
 class ASCIIConverter:
     # Conjunto de caracteres Unicode ordenados por densidad
     UNICODE_CHARS = [
+        '⠀',  # Espacio en blanco (más claro)
         '⣀', '⣁', '⣂', '⣃', '⣄', '⣅', '⣆', '⣇', '⣈', '⣉', '⣊', '⣋', '⣌', '⣍', '⣎', '⣏',
         '⣐', '⣑', '⣒', '⣓', '⣔', '⣕', '⣖', '⣗', '⣘', '⣙', '⣚', '⣛', '⣜', '⣝', '⣞', '⣟',
         '⣠', '⣡', '⣢', '⣣', '⣤', '⣥', '⣦', '⣧', '⣨', '⣩', '⣪', '⣫', '⣬', '⣭', '⣮', '⣯',
-        '⣰', '⣱', '⣲', '⣳', '⣴', '⣵', '⣶', '⣷', '⣸', '⣹', '⣺', '⣻', '⣼', '⣽', '⣾', '⣿', '⠀'
+        '⣰', '⣱', '⣲', '⣳', '⣴', '⣵', '⣶', '⣷', '⣸', '⣹', '⣺', '⣻', '⣼', '⣽', '⣾', '⣿'
     ]
 
     @staticmethod
@@ -16,14 +17,20 @@ class ASCIIConverter:
         """Aplica el algoritmo de Floyd-Steinberg Dithering a una imagen en escala de grises."""
         pixels = np.array(image, dtype=float)
         height, width = pixels.shape
+        num_levels = len(ASCIIConverter.UNICODE_CHARS) - 1
 
         for y in range(height):
             for x in range(width):
                 old_pixel = pixels[y, x]
-                new_pixel = round(old_pixel / 255 * (len(ASCIIConverter.UNICODE_CHARS) - 1))
+
+                # Cuantizar el píxel al nivel más cercano
+                new_pixel = round(old_pixel / 255.0 * num_levels)
+                new_pixel = max(0, min(num_levels, new_pixel))  # Clamp
+
                 pixels[y, x] = new_pixel
 
-                quant_error = old_pixel - new_pixel / (len(ASCIIConverter.UNICODE_CHARS) - 1) * 255
+                # Calcular el error de cuantización
+                quant_error = old_pixel - (new_pixel / num_levels * 255.0)
 
                 # Distribuir el error a los píxeles vecinos
                 if x + 1 < width:
@@ -48,7 +55,7 @@ class ASCIIConverter:
         new_height = int(max_width * aspect_ratio * 0.55)  # 0.55 corrige la proporción de los caracteres
 
         # Redimensionar imagen
-        resized_image = gray_image.resize((max_width, new_height))
+        resized_image = gray_image.resize((max_width, new_height), Image.Resampling.LANCZOS)
 
         # Aplicar dithering
         dithered = ASCIIConverter.floyd_steinberg_dithering(resized_image)
